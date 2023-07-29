@@ -1,0 +1,111 @@
+---
+title: "Preços médios dos combustíveis no Brasil"
+subtitle: "**Agência Nacional do Petróleo, Gás Natural e Biocombustíveis**"
+date: "`r format(Sys.time(), '%d de %B, %Y')`"
+author: "Fábio Rocha"
+output: pdf_document
+---
+
+# Pacotes
+
+```{r, echo=T, eval=T, results='asis', fig.width=11, fig.height=5, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+library(readxl) 
+library(tidyverse)
+library(lubridate)
+
+```
+
+# Download e leitura de dados
+
+```{r, echo=T, eval=T, results='asis', fig.width=8, fig.height=4, fig.align='center', out.width="1\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+url = 'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/precos-revenda-e-de-distribuicao-combustiveis/shlp/semanal/semanal-municipios-2022.xlsx/@@download/file/semanal-municipios-2022.xlsx'
+
+temp = tempfile()
+download.file(url, destfile=temp, mode='wb')
+data2 = read_excel(temp, sheet=1, col_names = TRUE, skip=11, 
+                   col_types = c('date', "date", "text", "text","text", 'text',
+                                 'numeric', 'text', rep('numeric', 6)))
+rm(temp)
+
+```
+
+```{r, echo=T, eval=T, results='asis', fig.width=10, fig.height=7, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+data2[(data2$PRODUTO) == "ÓLEO DIESEL",]$PRODUTO = "OLEO DIESEL"
+data2[(data2$PRODUTO) == "ÓLEO DIESEL S10",]$PRODUTO = "OLEO DIESEL S10"
+
+data2 <- data2 %>%
+  filter(`MUNICÍPIO` %in% c("OURO PRETO"))
+
+```
+
+# Visualização dos dados por produtos
+
+```{r, echo=T, eval=T, results='asis', fig.width=9, fig.height=8, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+ # Convertendo a coluna `DATA FINAL` para o formato de data
+data2$`DATA FINAL` <- as.Date(data2$`DATA FINAL`)
+
+library(ggthemes)
+
+ggplot(data2, aes(x = `DATA FINAL`, y = `PREÇO MÉDIO REVENDA`, color = `PRODUTO`)) +
+  geom_ribbon(aes(ymin = `PREÇO MÍNIMO REVENDA`, ymax = `PREÇO MÁXIMO REVENDA`), colour = 'gray', alpha = .2) +
+  geom_line(size = .8) +
+  scale_x_date(date_labels = "%b-%y", date_breaks = "3 month") +
+  theme_minimal() +
+  facet_wrap(~ `PRODUTO`, scales = 'free', ncol = 2) +
+  theme(legend.position = 'none',
+        plot.title = ggplot2::element_text(face = "bold", size = 20),
+        plot.subtitle = ggplot2::element_text(face = "italic"),
+        legend.text = ggplot2::element_text(face = "bold")) +
+  labs(title = "Preços médios dos combustíveis - Ouro Preto",
+       subtitle = "Agência Nacional do Petróleo, Gás Natural e Biocombustíveis",
+       x = '', 
+       y = 'R$',
+       caption = 'Elaboração: Fábio Rocha com dados da ANP')
+
+
+
+```
+
+# Download e leitura de dados - Brasil
+
+```{r, echo=T, eval=T, results='asis', fig.width=9, fig.height=8, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+url = 'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/precos-revenda-e-de-distribuicao-combustiveis/shlp/semanal/semanal-brasil-desde-2013.xlsx'
+
+temp = tempfile()
+download.file(url, destfile=temp, mode='wb')
+data_br = read_excel(temp, sheet=1, col_names = TRUE, skip=17)
+rm(temp)
+
+```
+
+
+# Visualização dos dados por produtos
+
+```{r, echo=T, eval=T, results='asis', fig.width=9, fig.height=8, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+data_br$`DATA FINAL` <- as.Date(data_br$`DATA FINAL`)
+
+  ggplot(data_br, aes(x = `DATA FINAL`, y = `PREÇO MÉDIO REVENDA`, color = `PRODUTO`)) +
+  geom_ribbon(aes(ymin = `PREÇO MÍNIMO REVENDA`, ymax = `PREÇO MÁXIMO REVENDA`), colour = 'gray', alpha = .2) +
+  geom_line(size = 0.8) +
+  scale_x_date(date_labels = "%Y", date_breaks = "12 month") +
+  theme_minimal() +
+  facet_wrap(~ `PRODUTO`, scales = 'free', ncol = 2) +
+  theme(legend.position = 'none',
+        plot.title = ggplot2::element_text(face = "bold", size = 20),
+        plot.subtitle = ggplot2::element_text(face = "italic"),
+        legend.text = ggplot2::element_text(face = "bold"),
+        axis.text.x = element_text(angle = 25, hjust = 1)) +  # Rotaciona o rótulo do eixo x em 45 graus
+  labs(title = "Preços médios dos combustíveis - Brasil",
+       subtitle = "Agência Nacional do Petróleo, Gás Natural e Biocombustíveis | 30-dez-2012 a 03-jun-2023",
+       x = 'Data', 
+       y = 'R$',
+       caption = 'Elaboração: Fábio Rocha com dados da ANP')
+
+
+```
